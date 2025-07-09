@@ -4,6 +4,7 @@ BRIAN is a terminal-based TTS (Text-to-Speech) reader for text files. It provide
 
 ## ✨ Features
 
+- 📁 **All In One Python File** so you can simply add it to your PATH to use it
 - 🖱️ **Keyboard-based Text Navigation** with sentence & paragraph navigation
 - 🔊 **Pause, resume, stop** - real-time speech control
 - ⚡ **Speech speed adjustment** (10–400 wpm)
