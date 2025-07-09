@@ -50,6 +50,7 @@ if platform.system() == "Linux":
 
 import re
 import threading
+import warnings
 from enum import Enum
 from typing import List, Optional
 
@@ -196,8 +197,6 @@ class Brian:
         self.wpm_label.value = f"[bold magenta]{self.speech_wpm} wpm[/bold]"
 
     def display(self, text: str):
-        from __main__ import parse_text  # Needed for dynamic script execution
-
         self.paragraphs = parse_text(text)
         self.update_content_view()
         self.run_ui()
@@ -424,8 +423,8 @@ def tts(filepath: Optional[str]):
     if not filepath and not sys.stdin.isatty():
         text = sys.stdin.read()
     elif not filepath:
-        click.secho("📚 BRIAN (TTS READER)\n", fg="magenta", bold=True)
-        filepath = str(click.prompt("Enter the path to a text file", type=str))
+        click.secho("📚 BRIAN", fg="magenta")
+        filepath = str(click.prompt("Enter path to a text file", type=str))
         try:
             with open(filepath, "r", encoding="utf-8", errors="ignore") as file:
                 text = file.read()
@@ -442,4 +441,5 @@ def tts(filepath: Optional[str]):
 
 
 if __name__ == "__main__":
+    warnings.simplefilter("ignore", ResourceWarning)
     tts()
