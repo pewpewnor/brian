@@ -209,12 +209,17 @@ class Brian:
             para_line = ""
             abs_i = self.view_start + i
             for j, sentence in enumerate(paragraph):
-                if abs_i == self.paragraph_index and j == self.sentence_index:
+                if abs_i < self.paragraph_index or (
+                    abs_i == self.paragraph_index and j < self.sentence_index
+                ):
+                    para_line += f"[dim white]{sentence}[/dim white] "
+                elif abs_i == self.paragraph_index and j == self.sentence_index:
                     para_line += (
                         f"[bold underline white]{sentence}[/bold /underline white] "
                     )
                 else:
-                    para_line += sentence + " "
+                    para_line += f"[white]{sentence}[white] "
+
             lines.append(para_line.strip())
 
         self.content_label.value = "\n\n".join(lines)
@@ -368,6 +373,11 @@ class Brian:
         manager.stop()
         sys.exit(0)
 
+    def scroll_view(self, delta: int):
+        max_start = max(0, len(self.paragraphs) - self.view_height)
+        self.view_start = max(0, min(max_start, self.view_start + delta))
+        self.update_content_view()
+
     def run_ui(self):
         with ptg.WindowManager() as manager:
             manager.layout.add_slot("Body")
@@ -377,7 +387,7 @@ class Brian:
                 justify="center",
             )
             instructions = ptg.Label(
-                "[dim]↑↓ [Paragraph]  ←→ [Sentence]  p [Pause]  u [Unpause]  space/⏎ [Toggle]  ,/. [Speed]  s [Stop]  q [Quit][/dim]",
+                "[dim]↑↓ [Paragraph]  ←→ [Sentence] j/k [Scroll Paragraph]  p [Pause]  u [Unpause]  space/⏎ [Toggle]  ,/. [Speed]  s [Stop]  q [Quit][/dim]",
                 justify="center",
             )
             separator = ptg.Label("─" * (ptg.Terminal().width - 10), style="dim")
@@ -388,15 +398,16 @@ class Brian:
             )
 
             window = ptg.Window(
+                instructions,
                 title,
                 status_bar,
                 separator,
                 self.content_label,
                 ptg.Label(""),
-                instructions,
                 box="DOUBLE",
                 is_resizable=True,
                 vertical_align=ptg.VerticalAlignment.TOP,
+                allow_scroll=True,
             )
 
             manager.add(window)
@@ -413,6 +424,8 @@ class Brian:
             manager.bind(".", lambda *_: self.faster())
             manager.bind("s", lambda *_: self.stop_gracefully(manager))
             manager.bind("q", lambda *_: self.quit_app(manager))
+            manager.bind("k", lambda *_: self.scroll_view(-1))
+            manager.bind("j", lambda *_: self.scroll_view(1))
 
             manager.run()
 
