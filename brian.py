@@ -24,7 +24,7 @@ def get_user_site_path(real_user):
 
     if system == "Linux":
         return f"/home/{real_user}/.local/lib/python{py_version}/site-packages"
-    elif system == "Darwin":  # macOS
+    elif system == "Darwin":
         return (
             f"/Users/{real_user}/Library/Python/{py_version}/lib/python/site-packages"
         )
@@ -49,7 +49,6 @@ if platform.system() == "Linux":
     os.environ["PULSE_SERVER"] = f"unix:{xdg_runtime_dir}/pulse/native"
 
 import re
-import signal
 import threading
 from enum import Enum
 from typing import List, Optional
@@ -425,7 +424,7 @@ def tts(filepath: Optional[str]):
     if not filepath and not sys.stdin.isatty():
         text = sys.stdin.read()
     elif not filepath:
-        click.secho("📚 BRIAN TTS READER (TUI)\n", fg="magenta", bold=True)
+        click.secho("📚 BRIAN (TTS READER)\n", fg="magenta", bold=True)
         filepath = str(click.prompt("Enter the path to a text file", type=str))
         try:
             with open(filepath, "r", encoding="utf-8", errors="ignore") as file:
