@@ -420,9 +420,7 @@ class Brian:
 @click.command()
 @click.argument("filepath", required=False)
 def tts(filepath: Optional[str]):
-    if not filepath and not sys.stdin.isatty():
-        text = sys.stdin.read()
-    elif not filepath:
+    if not filepath:
         click.secho("📚 BRIAN", fg="magenta")
         filepath = str(click.prompt("Enter path to a text file", type=str))
         try:
