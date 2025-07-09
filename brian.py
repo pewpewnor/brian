@@ -161,7 +161,7 @@ class StatusLabel(Enum):
     READING = "[bold green]▶ Reading[/bold]"
     PAUSED = "[bold yellow]⏸ Paused[/bold]"
     STOPPING = "[bold red]⏹ Stopping...[/bold]"
-    PAUSING = "[dim yellow]⏸ Pausing...[/bold]"
+    PAUSING = "[dim yellow]⏸ Pausing...[/dim]"
 
 
 class Brian:
@@ -190,16 +190,16 @@ class Brian:
 
         self.engine.setProperty("rate", self.speech_wpm)
 
+    def display(self, text: str):
+        self.paragraphs = parse_text(text)
+        self.update_content_view()
+        self.run_ui()
+
     def update_status_label(self, status_label: StatusLabel):
         self.status_text_label.value = status_label.value
 
     def update_speech_wpm(self):
         self.wpm_label.value = f"[bold magenta]{self.speech_wpm} wpm[/bold]"
-
-    def display(self, text: str):
-        self.paragraphs = parse_text(text)
-        self.update_content_view()
-        self.run_ui()
 
     def update_content_view(self):
         visible = self.paragraphs[self.view_start : self.view_start + self.view_height]
@@ -244,17 +244,20 @@ class Brian:
         if self.reading_active:
             return
 
-        para = self.paragraphs[self.paragraph_index]
+        paragraph = self.paragraphs[self.paragraph_index]
         new_index = self.sentence_index + delta
 
         if new_index < 0 and self.paragraph_index > 0:
             self.select_paragraph(-1)
             self.sentence_index = len(self.paragraphs[self.paragraph_index]) - 1
-        elif new_index >= len(para) and self.paragraph_index < len(self.paragraphs) - 1:
+        elif (
+            new_index >= len(paragraph)
+            and self.paragraph_index < len(self.paragraphs) - 1
+        ):
             self.select_paragraph(1)
             self.sentence_index = 0
         else:
-            self.sentence_index = max(0, min(len(para) - 1, new_index))
+            self.sentence_index = max(0, min(len(paragraph) - 1, new_index))
 
         self.update_content_view()
 
