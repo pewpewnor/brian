@@ -385,13 +385,9 @@ class Brian:
         with ptg.WindowManager() as manager:
             manager.layout.add_slot("Body")
 
-            title = ptg.Label(
-                "[bold]BRIAN[/bold]",
-                justify="center",
-            )
+            title = ptg.Label("[bold]BRIAN[/bold]")
             instructions = ptg.Label(
-                "[dim]↑↓ [Paragraph]  ←→ [Sentence] j/k [Scroll Paragraph]  p [Pause]  u [Unpause]  space/⏎ [Toggle]  ,/. [Speed]  s [Stop]  q [Quit][/dim]",
-                justify="center",
+                "[dim]↑↓ [Paragraph]  ←→ [Sentence] j/k [Scroll Paragraph]  p [Pause]  u [Unpause]  space/⏎ [Toggle]  ,/. [Speed]  s [Stop]  q [Quit][/dim]"
             )
             separator = ptg.Label("─" * (ptg.Terminal().width - 10), style="dim")
 
