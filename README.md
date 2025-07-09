@@ -1,6 +1,6 @@
 # 🧠 BRIAN
 
-BRIAN is a terminal-based TTS (Text-to-Speech) reader for text files. It provides a Text User Interface (TUI) with Python by using [pytermgui](https://github.com/bczsalba/pytermgui) and [pyttsx3](https://github.com/nateshmbhat/pyttsx3).
+BRIAN is a terminal-based TTS (Text-to-Speech) reader for text files. It provides a Text User Interface (TUI) with Python by using [pytermgui](https://github.com/bczsalba/pytermgui), [pyttsx3](https://github.com/nateshmbhat/pyttsx3), and [click](https://github.com/pallets/click).
 
 ## ✨ Features
 
