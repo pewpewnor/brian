@@ -177,7 +177,7 @@ class Brian:
 
         self.reading_active = False
         self.stopped = False
-        self.speech_wpm = 170
+        self.speech_wpm = 150
         self.current_thread: Optional[threading.Thread] = None
 
         self.content_label = ptg.Label("", parent_align=ptg.HorizontalAlignment.LEFT)
