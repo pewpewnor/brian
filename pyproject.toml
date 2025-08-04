@@ -1,0 +1,10 @@
+[project]
+name = "brian"
+version = "0.1.0"
+description = "TUI-based TTS For Files"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pytermgui>=7.7.4",
+    "pyttsx3>=2.99",
+]
