@@ -43,12 +43,13 @@ if platform.system() == "Linux":
     os.environ["XDG_RUNTIME_DIR"] = xdg_runtime_dir
     os.environ["PULSE_SERVER"] = f"unix:{xdg_runtime_dir}/pulse/native"
 
+import math
 import re
 import threading
 import time
 import warnings
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import click
 import pytermgui as ptg
@@ -163,6 +164,9 @@ class Brian:
         self.sentence_index = 0
         self.view_start = 0
         self.view_height = 20
+        self._term_height = 40
+        self._term_width = 80
+        self._visible_indices: Set[int] = set()
 
         self.reading_active = False
         self.stopped = False
@@ -193,9 +197,23 @@ class Brian:
     def display(self, text: str):
         self.paragraphs = parse_text(text)
         self._build_flat_sentences()
-        self.view_height = max(10, ptg.Terminal().height - 12)
+        self._recalc_view_height()
         self.update_content_view()
         self.run_ui()
+
+    def _recalc_view_height(self):
+        term = ptg.Terminal()
+        self._term_height = term.height
+        self._term_width = term.width
+        self.view_height = max(6, self._term_height - 10)
+
+    def _content_width(self) -> int:
+        return max(20, self._term_width - 8)
+
+    def _sentence_lines(self, text: str) -> int:
+        clean = re.sub(r"\[.*?\]", "", text)
+        w = self._content_width()
+        return max(1, math.ceil(len(clean) / w)) if clean else 1
 
     def update_status_label(self, status: StatusLabel):
         self.status_text_label.value = status.value
@@ -212,20 +230,28 @@ class Brian:
     def update_content_view(self):
         flat = self.flat_sentences
         total = len(flat)
+        self._visible_indices = set()
+
         if not flat:
             self.content_label.value = "[dim]No content.[/dim]"
             return
 
         lines = []
+        lines_used = 0
         prev_para = None
 
-        for idx in range(
-            self.view_start, min(self.view_start + self.view_height, total)
-        ):
+        for idx in range(self.view_start, total):
             para_i, sent_j, text = flat[idx]
 
-            if prev_para is not None and para_i != prev_para:
+            gap = 1 if (prev_para is not None and para_i != prev_para) else 0
+            cost = self._sentence_lines(text) + gap
+
+            if lines_used + cost > self.view_height and lines:
+                break
+
+            if gap:
                 lines.append("")
+                lines_used += 1
 
             is_past = (para_i, sent_j) < (self.paragraph_index, self.sentence_index)
             is_current = (para_i, sent_j) == (self.paragraph_index, self.sentence_index)
@@ -237,34 +263,38 @@ class Brian:
             else:
                 lines.append(f"[white]{text}[/white]")
 
+            lines_used += self._sentence_lines(text)
+            self._visible_indices.add(idx)
             prev_para = para_i
 
         self.content_label.value = "\n".join(lines)
         self.update_progress()
 
-    def _sentences_fitting(self, start: int) -> int:
-        lines_used = 0
-        count = 0
-        prev_para = None
-        for idx in range(start, len(self.flat_sentences)):
-            para_i, _, _ = self.flat_sentences[idx]
-            if prev_para is not None and para_i != prev_para:
-                lines_used += 1
-            lines_used += 1
-            if lines_used > self.view_height:
+    def _view_start_for_bottom(self, flat_idx: int) -> int:
+        budget = self.view_height
+        start = flat_idx
+        for idx in range(flat_idx, -1, -1):
+            para_i, _, text = self.flat_sentences[idx]
+            cost = self._sentence_lines(text)
+            if idx > 0:
+                prev_para_i, _, _ = self.flat_sentences[idx - 1]
+                if prev_para_i != para_i:
+                    cost += 1
+            if budget - cost < 0:
                 break
-            count += 1
-            prev_para = para_i
-        return max(count, 1)
+            budget -= cost
+            start = idx
+        return start
 
     def ensure_visible(self):
         flat_idx = self._current_flat_index()
         if flat_idx < self.view_start:
             self.view_start = flat_idx
-        elif flat_idx >= self.view_start + self._sentences_fitting(self.view_start):
-            self.view_start = flat_idx
-            fitting = self._sentences_fitting(flat_idx)
-            self.view_start = max(0, flat_idx - fitting + 1)
+        elif flat_idx not in self._visible_indices:
+            self.view_start = self._view_start_for_bottom(flat_idx)
+            self.update_content_view()
+            if flat_idx not in self._visible_indices:
+                self.view_start = flat_idx
 
     def select_paragraph(self, delta: int):
         if self.reading_active:
@@ -409,7 +439,7 @@ class Brian:
         sys.exit(0)
 
     def scroll_page(self, direction: int):
-        step = self._sentences_fitting(self.view_start)
+        step = max(1, len(self._visible_indices))
         max_start = max(0, len(self.flat_sentences) - 1)
         self.view_start = max(0, min(max_start, self.view_start + direction * step))
         self.update_content_view()
@@ -420,6 +450,7 @@ class Brian:
         self.update_content_view()
 
     def run_ui(self):
+        self._recalc_view_height()
         with ptg.WindowManager() as manager:
             manager.layout.add_slot("Body")
 
@@ -428,7 +459,7 @@ class Brian:
                 "[dim]↑↓ Para  ←→ Sent  j/k Scroll  PgUp/PgDn Page  g/G Jump start/end"
                 "  Space/⏎ Toggle  ,/. Speed  p Pause  u Unpause  s Stop  q Quit[/dim]"
             )
-            separator = ptg.Label("─" * (ptg.Terminal().width - 10), style="dim")
+            separator = ptg.Label("─" * (self._term_width - 10), style="dim")
 
             status_bar = ptg.Splitter(
                 self.status_text_label,
